@@ -40,13 +40,14 @@ dialog label{display:block;margin-top:10px}
 <label for="o">Owner</label><input id="o" autocomplete="off">
 <label for="r">Repo</label><input id="r" autocomplete="off">
 <label for="b">Branch</label><input id="b" autocomplete="off">
+<label for="p">Skills folder in repo</label><input id="p" autocomplete="off">
 <label for="t">Token (needed to save)</label><input id="t" type="password" autocomplete="off">
 <p class="row" style="margin-top:14px"><button class="p" value="ok">Save settings</button><button value="x">Cancel</button></p>
 </form></dialog>
 
 <script>
 const $=s=>document.querySelector(s);
-let cfg={o:"",r:"skill-hub",b:"main",t:""},skills=[],cur=null;
+let cfg={o:"salongbas1",r:"skills",b:"main",p:"skill-hub/skills",t:""},skills=[],cur=null;
 try{Object.assign(cfg,JSON.parse(localStorage.getItem("skillhub")||"{}"))}catch(e){}
 const api=p=>`https://api.github.com/repos/${cfg.o}/${cfg.r}/contents/${p}`;
 const hdr=()=>({Accept:"application/vnd.github+json",...(cfg.t?{Authorization:"Bearer "+cfg.t}:{})});
@@ -63,7 +64,7 @@ function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;
 async function loadList(){
   if(!cfg.o){$("#list").innerHTML='<p class="empty">Set owner and repo in Settings.</p>';return}
   try{
-    const r=await gh(api("skills")+"?ref="+cfg.b);
+    const r=await gh(api(cfg.p)+"?ref="+cfg.b);
     skills=r.filter(x=>x.type==="dir").map(x=>x.name);
     renderList();
   }catch(e){$("#list").innerHTML='<p class="msg err">Could not load skills: '+esc(e.message)+'</p>'}
@@ -82,7 +83,7 @@ const build=(n,d,b)=>`---\nname: ${n}\ndescription: ${d}\n---\n\n${b.replace(/^\
 
 async function open(name){
   try{
-    const f=await gh(api(`skills/${name}/SKILL.md`)+"?ref="+cfg.b);
+    const f=await gh(api(`${cfg.p}/${name}/SKILL.md`)+"?ref="+cfg.b);
     cur={name,sha:f.sha,isNew:false,...parse(b64d(f.content))};
   }catch(e){cur={name,sha:null,isNew:false,name,description:"",body:""};}
   edit();renderList();
@@ -114,7 +115,7 @@ async function save(){
   const v=vals();if(!v)return;
   if(!cfg.t){say("Add a token in Settings to save.","err");return}
   try{
-    const path=`skills/${v.n}/SKILL.md`;
+    const path=`${cfg.p}/${v.n}/SKILL.md`;
     const body={message:(cur.isNew?"Add ":"Update ")+v.n,content:b64e(build(v.n,v.d,v.b)),branch:cfg.b};
     if(cur.sha)body.sha=cur.sha;
     const r=await gh(api(path),{method:"PUT",body:JSON.stringify(body)});
@@ -133,7 +134,7 @@ async function del(){
   if(!cfg.t){say("Add a token in Settings to delete.","err");return}
   if(!confirm("Delete "+cur.name+" from the repo?"))return;
   try{
-    await gh(api(`skills/${cur.name}/SKILL.md`),{method:"DELETE",body:JSON.stringify({message:"Delete "+cur.name,sha:cur.sha,branch:cfg.b})});
+    await gh(api(`${cfg.p}/${cur.name}/SKILL.md`),{method:"DELETE",body:JSON.stringify({message:"Delete "+cur.name,sha:cur.sha,branch:cfg.b})});
     skills=skills.filter(s=>s!==cur.name);cur=null;renderList();
     $("#main").innerHTML='<div class="empty">Deleted. Pick another skill.</div>';
   }catch(e){say("Delete failed: "+e.message,"err")}
@@ -142,10 +143,10 @@ async function del(){
 $("#list").onclick=e=>{const b=e.target.closest(".item");if(b)open(b.dataset.n)};
 $("#q").oninput=renderList;
 $("#new").onclick=()=>{cur={name:"",description:"",body:"# New skill\n\n",sha:null,isNew:true};edit();renderList()};
-$("#cfg").onclick=()=>{["o","r","b","t"].forEach(k=>$("#"+k).value=cfg[k]);$("#dlg").showModal()};
+$("#cfg").onclick=()=>{["o","r","b","p","t"].forEach(k=>$("#"+k).value=cfg[k]);$("#dlg").showModal()};
 $("#dlg").onclose=()=>{
   if($("#dlg").returnValue!=="ok")return;
-  ["o","r","b","t"].forEach(k=>cfg[k]=$("#"+k).value.trim());
+  ["o","r","b","p","t"].forEach(k=>cfg[k]=$("#"+k).value.trim().replace(/^\/+|\/+$/g,""));
   try{localStorage.setItem("skillhub",JSON.stringify(cfg))}catch(e){}
   loadList();
 };
