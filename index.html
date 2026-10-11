@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skill Hub</title>
+<style>
+:root{--bg:#eef1f4;--panel:#fff;--ink:#14202b;--mute:#5b6b7a;--line:#d3dae1;--acc:#0f766e;--accfg:#fff;--bad:#b42318;--warn:#a15c07}
+@media(prefers-color-scheme:dark){:root{--bg:#10171d;--panel:#18212a;--ink:#e6edf3;--mute:#8fa1b2;--line:#2a3743;--acc:#2dd4bf;--accfg:#06201c;--bad:#f97066;--warn:#f5b04c}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;grid-template-columns:280px 1fr;grid-template-rows:auto 1fr}
+header{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font:600 20px Georgia,serif;margin:0;flex:1}
+button,input,textarea{font:inherit;color:inherit}
+button{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600}
+button.d{color:var(--bad)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+aside{padding:14px;border-right:1px solid var(--line);overflow:auto;display:flex;flex-direction:column;gap:8px}
+input,textarea{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+.item{text-align:left;width:100%;border-radius:6px}
+.item.on{border-color:var(--acc);box-shadow:inset 3px 0 0 var(--acc)}
+main{padding:18px;overflow:auto;display:flex;flex-direction:column;gap:10px;min-width:0}
+label{font-weight:600;font-size:13px}
+textarea{flex:1;min-height:320px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.msg{min-height:20px;font-size:13px}
+.msg.err{color:var(--bad)}.msg.ok{color:var(--acc)}.msg.warn{color:var(--warn)}
+.empty{color:var(--mute);margin:auto;text-align:center;max-width:36ch}
+dialog{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;width:min(420px,92vw)}
+dialog::backdrop{background:#0008}
+dialog label{display:block;margin-top:10px}
+@media(max-width:720px){body{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}header{grid-column:1}aside{border-right:0;border-bottom:1px solid var(--line);max-height:34vh}}
+</style></head><body>
+<header><h1>Skill Hub</h1><button id="new">New skill</button><button id="cfg">Settings</button></header>
+<aside><input id="q" placeholder="Search skills" aria-label="Search skills"><div id="list"></div></aside>
+<main id="main"><div class="empty">Pick a skill on the left, or create a new one. Open Settings first to point at your repo.</div></main>
+
+<dialog id="dlg"><form method="dialog">
+<strong>Settings</strong>
+<label for="o">Owner</label><input id="o" autocomplete="off">
+<label for="r">Repo</label><input id="r" autocomplete="off">
+<label for="b">Branch</label><input id="b" autocomplete="off">
+<label for="p">Skills folder in repo</label><input id="p" autocomplete="off">
+<label for="t">Token (needed to save)</label><input id="t" type="password" autocomplete="off">
+<p class="row" style="margin-top:14px"><button class="p" value="ok">Save settings</button><button value="x">Cancel</button></p>
+</form></dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+let cfg={o:"salongbas1",r:"skills",b:"main",p:"skill-hub/skills",t:""},skills=[],cur=null;
+try{Object.assign(cfg,JSON.parse(localStorage.getItem("skillhub")||"{}"))}catch(e){}
+const api=p=>`https://api.github.com/repos/${cfg.o}/${cfg.r}/contents/${p}`;
+const hdr=()=>({Accept:"application/vnd.github+json",...(cfg.t?{Authorization:"Bearer "+cfg.t}:{})});
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+const b64e=s=>{let b="";new TextEncoder().encode(s).forEach(c=>b+=String.fromCharCode(c));return btoa(b)};
+async function gh(url,opt={}){
+  const res=await fetch(url,{...opt,headers:{...hdr(),...(opt.headers||{})}});
+  if(!res.ok){let m=res.status+"";try{m+=" "+(await res.json()).message}catch(e){}throw new Error(m)}
+  return res.status===204?null:res.json();
+}
+function say(t,c){const m=$("#msg");if(m){m.textContent=t;m.className="msg "+(c||"")}}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+async function loadList(){
+  if(!cfg.o){$("#list").innerHTML='<p class="empty">Set owner and repo in Settings.</p>';return}
+  try{
+    const r=await gh(api(cfg.p)+"?ref="+cfg.b);
+    skills=r.filter(x=>x.type==="dir").map(x=>x.name);
+    renderList();
+  }catch(e){$("#list").innerHTML='<p class="msg err">Could not load skills: '+esc(e.message)+'</p>'}
+}
+function renderList(){
+  const f=$("#q").value.toLowerCase();
+  $("#list").innerHTML=skills.filter(s=>s.includes(f)).map(s=>`<button class="item ${s===cur?.name?"on":""}" data-n="${esc(s)}">${esc(s)}</button>`).join("")||'<p class="empty">No skills match.</p>';
+}
+function parse(txt){
+  const m=txt.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if(!m)return{name:"",description:"",body:txt};
+  const g=k=>((m[1].match(new RegExp("^"+k+":\\s*(.*)$","m"))||[])[1]||"").trim();
+  return{name:g("name"),description:g("description"),body:m[2]};
+}
+const build=(n,d,b)=>`---\nname: ${n}\ndescription: ${d}\n---\n\n${b.replace(/^\n+/,"")}`;
+
+async function open(name){
+  try{
+    const f=await gh(api(`${cfg.p}/${name}/SKILL.md`)+"?ref="+cfg.b);
+    cur={name,sha:f.sha,isNew:false,...parse(b64d(f.content))};
+  }catch(e){cur={name,sha:null,isNew:false,name,description:"",body:""};}
+  edit();renderList();
+}
+function edit(){
+  $("#main").innerHTML=`
+  <label for="n">Name (lowercase, hyphens)</label><input id="n" value="${esc(cur.name)}" ${cur.isNew?"":"readonly"}>
+  <label for="d">Description (what it does and when to use it)</label><input id="d" value="${esc(cur.description)}">
+  <label for="bd">Instructions</label><textarea id="bd">${esc(cur.body)}</textarea>
+  <div class="row"><button class="p" id="save">Save to GitHub</button><button id="dl">Download SKILL.md</button>${cur.isNew?"":'<button class="d" id="del">Delete</button>'}</div>
+  <div class="msg" id="msg"></div>`;
+  $("#d").oninput=check;check();
+  $("#save").onclick=save;$("#dl").onclick=download;
+  if($("#del"))$("#del").onclick=del;
+}
+function check(){
+  const l=$("#d").value.length;
+  if(!l)say("Add a description. Claude uses it to decide when to load this skill.","warn");
+  else if(l>300)say("Description is "+l+" characters. Shorter descriptions use less context.","warn");
+  else say("");
+}
+function vals(){
+  const n=$("#n").value.trim(),d=$("#d").value.trim(),b=$("#bd").value;
+  if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n)){say("Name must use lowercase letters, numbers and single hyphens.","err");return null}
+  if(!d){say("Description is required.","err");return null}
+  return{n,d,b};
+}
+async function save(){
+  const v=vals();if(!v)return;
+  if(!cfg.t){say("Add a token in Settings to save.","err");return}
+  try{
+    const path=`${cfg.p}/${v.n}/SKILL.md`;
+    const body={message:(cur.isNew?"Add ":"Update ")+v.n,content:b64e(build(v.n,v.d,v.b)),branch:cfg.b};
+    if(cur.sha)body.sha=cur.sha;
+    const r=await gh(api(path),{method:"PUT",body:JSON.stringify(body)});
+    cur={...cur,name:v.n,description:v.d,body:v.b,sha:r.content.sha,isNew:false};
+    if(!skills.includes(v.n))skills.push(v.n);
+    renderList();edit();say("Saved to GitHub.","ok");
+  }catch(e){say("Save failed: "+e.message,"err")}
+}
+function download(){
+  const v=vals();if(!v)return;
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([build(v.n,v.d,v.b)],{type:"text/markdown"}));
+  a.download="SKILL.md";a.click();
+}
+async function del(){
+  if(!cfg.t){say("Add a token in Settings to delete.","err");return}
+  if(!confirm("Delete "+cur.name+" from the repo?"))return;
+  try{
+    await gh(api(`${cfg.p}/${cur.name}/SKILL.md`),{method:"DELETE",body:JSON.stringify({message:"Delete "+cur.name,sha:cur.sha,branch:cfg.b})});
+    skills=skills.filter(s=>s!==cur.name);cur=null;renderList();
+    $("#main").innerHTML='<div class="empty">Deleted. Pick another skill.</div>';
+  }catch(e){say("Delete failed: "+e.message,"err")}
+}
+
+$("#list").onclick=e=>{const b=e.target.closest(".item");if(b)open(b.dataset.n)};
+$("#q").oninput=renderList;
+$("#new").onclick=()=>{cur={name:"",description:"",body:"# New skill\n\n",sha:null,isNew:true};edit();renderList()};
+$("#cfg").onclick=()=>{["o","r","b","p","t"].forEach(k=>$("#"+k).value=cfg[k]);$("#dlg").showModal()};
+$("#dlg").onclose=()=>{
+  if($("#dlg").returnValue!=="ok")return;
+  ["o","r","b","p","t"].forEach(k=>cfg[k]=$("#"+k).value.trim().replace(/^\/+|\/+$/g,""));
+  try{localStorage.setItem("skillhub",JSON.stringify(cfg))}catch(e){}
+  loadList();
+};
+loadList();
+</script></body></html>
