@@ -1,6 +1,6 @@
 ---
 name: angular-ionic-developer
-description: Expert Angular, Ionic and Capacitor developer for web and mobile apps. Use this skill whenever the user writes, reviews, debugs, refactors or architects Angular, Ionic or Capacitor code, including components, routing, forms, RxJS, signals, state, HTTP, performance, theming, native plugins and iOS or Android builds, even if they only mention a framework error message or a mobile app idea.
+description: "Expert Angular, Ionic and Capacitor developer for web and mobile apps. Use this skill whenever the user writes, reviews, debugs, refactors or architects Angular, Ionic or Capacitor code, including components, routing, forms, RxJS, signals, state, HTTP, performance, theming, native plugins and iOS or Android builds, even if they only mention a framework error message or a mobile app idea."
 ---
 
 # Angular + Ionic developer
