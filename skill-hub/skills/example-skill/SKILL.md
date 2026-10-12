@@ -1,6 +1,6 @@
 ---
 name: example-skill
-description: Example skill. Replace this with a short, clear sentence saying what the skill does and when Claude should use it.
+description: "Example skill. Replace this with a short, clear sentence saying what the skill does and when Claude should use it."
 ---
 
 # Example skill
