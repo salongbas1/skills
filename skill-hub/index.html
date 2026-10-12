@@ -76,10 +76,10 @@ function renderList(){
 function parse(txt){
   const m=txt.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
   if(!m)return{name:"",description:"",body:txt};
-  const g=k=>((m[1].match(new RegExp("^"+k+":\\s*(.*)$","m"))||[])[1]||"").trim();
+  const g=k=>{let v=((m[1].match(new RegExp("^"+k+":\\s*(.*)$","m"))||[])[1]||"").trim();if(v[0]==="\""){try{return JSON.parse(v)}catch(e){}}return v};
   return{name:g("name"),description:g("description"),body:m[2]};
 }
-const build=(n,d,b)=>`---\nname: ${n}\ndescription: ${d}\n---\n\n${b.replace(/^\n+/,"")}`;
+const build=(n,d,b)=>`---\nname: ${n}\ndescription: ${JSON.stringify(d)}\n---\n\n${b.replace(/^\n+/,"")}`;
 
 async function open(name){
   try{
@@ -91,7 +91,7 @@ async function open(name){
 function edit(){
   $("#main").innerHTML=`
   <label for="n">Name (lowercase, hyphens)</label><input id="n" value="${esc(cur.name)}" ${cur.isNew?"":"readonly"}>
-  <label for="d">Description (what it does and when to use it)</label><input id="d" value="${esc(cur.description)}">
+  <label for="d">Description (what it does and when to use it)</label><textarea id="d" rows="3" style="flex:none;min-height:72px;font:inherit">${esc(cur.description)}</textarea>
   <label for="bd">Instructions</label><textarea id="bd">${esc(cur.body)}</textarea>
   <div class="row"><button class="p" id="save">Save to GitHub</button><button id="dl">Download SKILL.md</button>${cur.isNew?"":'<button class="d" id="del">Delete</button>'}</div>
   <div class="msg" id="msg"></div>`;
@@ -102,11 +102,12 @@ function edit(){
 function check(){
   const l=$("#d").value.length;
   if(!l)say("Add a description. Claude uses it to decide when to load this skill.","warn");
+  else if(l>1024)say("Description is "+l+" characters. Claude may reject descriptions over 1024. Move the detail into the instructions.","err");
   else if(l>300)say("Description is "+l+" characters. Shorter descriptions use less context.","warn");
   else say("");
 }
 function vals(){
-  const n=$("#n").value.trim(),d=$("#d").value.trim(),b=$("#bd").value;
+  const n=$("#n").value.trim(),d=$("#d").value.replace(/\s+/g," ").trim(),b=$("#bd").value;
   if(!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(n)){say("Name must use lowercase letters, numbers and single hyphens.","err");return null}
   if(!d){say("Description is required.","err");return null}
   return{n,d,b};
