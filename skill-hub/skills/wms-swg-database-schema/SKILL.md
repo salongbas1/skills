@@ -3,16 +3,16 @@ name: wms-swg-database-schema
 description: "ความรู้โครงสร้างฐานข้อมูล SQL Server similanwls_SWG ของระบบ Similan WLS/WMS (383 ตาราง ไม่มี foreign key) ใช้ช่วยเขียน ตรวจ และอธิบาย SQL/T-SQL เรื่อง PO, Receipt/Check-in, Sales Order, Pick/Pack/Delivery, Invoice, สต็อกพาเลท (pallet_location, stock_movements), Stock Count, Transfer/Adjust, BOM/Kitting, Master Data, POS, TMS และ interface log ใช้ทุกครั้งที่ผู้ใช้ถามว่าข้อมูลอยู่ตารางไหน join อย่างไร ขอ query หรือรายงานจากฐานข้อมูล WMS นี้ ถามความหมายคอลัมน์ หรือพูดถึงชื่อตารางเช่น sales_orders, receipt_master, product_master แม้ไม่ได้พูดคำว่า schema"
 ---
 
-# WMS SWG Database Schema
-
-ฐานข้อมูล similanwls_SWG (SQL Server, schema dbo อย่างเดียว) มี 383 ตาราง ไม่มี foreign key และมี PRIMARY KEY แค่ 17 ตาราง ไม่มีข้อมูลจริงให้ดู จึงไม่ทราบค่าที่เก็บอยู่ในคอลัมน์
+ฐานข้อมูล similanwls_SWG (SQL Server, schema dbo อย่างเดียว) มี 383 ตาราง ไม่มี foreign key และมี PRIMARY KEY จริงแค่ 17 ตาราง ไม่มีข้อมูลจริงให้ดู จึงไม่ทราบค่าที่เก็บอยู่ในคอลัมน์ ความรู้ในนี้มาจากสคริปต์ schema และเอกสาร Data Dictionary ภาษาไทย (ครอบคลุม 31 ตาราง)
 
 ## ข้อจำกัดที่ต้องบอกผู้ใช้เมื่อเกี่ยวข้อง
-- ความสัมพันธ์ระหว่างตารางอนุมานจากชื่อคอลัมน์ ไม่ได้มาจาก constraint ให้บอกระดับความมั่นใจเมื่อ join ข้ามตารางที่ไม่ชัด
-- ค่าของ status, order_type, grade ฯลฯ ไม่ทราบ อย่าเดาค่าใน WHERE ให้เสนอ SELECT DISTINCT status, COUNT(*) ... GROUP BY status ให้ผู้ใช้รันก่อน ชื่อสถานะในคู่มือ Similan (เช่น DATA ENTRY, WAITING) อาจเก็บต่างจากที่เห็นในคู่มือ
+- ความสัมพันธ์ระหว่างตารางอนุมานจากชื่อคอลัมน์และคำอธิบายใน dictionary ไม่ได้มาจาก constraint ให้บอกระดับความมั่นใจเมื่อ join ข้ามตารางที่ไม่ชัด
+- ค่าของ status, order_type, grade, flag ต่างๆ ไม่ทราบ (dictionary ก็ไม่ระบุ) อย่าเดาค่าใน WHERE ให้เสนอ SELECT DISTINCT status, COUNT(*) ... GROUP BY status ให้ผู้ใช้รันก่อน ชื่อสถานะในคู่มือ Similan (เช่น DATA ENTRY, WAITING) อาจเก็บต่างจากที่เห็นในคู่มือ
 - ไม่ทราบว่ามี index อะไรนอกจาก PRIMARY KEY ตารางใหญ่ (stock_movements, movements_history, pallet_history, ตาราง *_log) ให้กรอง client และช่วงวันที่เสมอ และแนะนำให้ตรวจ sys.indexes ก่อนรันบน production
+- Data dictionary ไม่ตรงกับฐานข้อมูล SWG 100% บางคอลัมน์มีเฉพาะใน dictionary (เช่น product_master.description_eng, stock_movements.engine) และบางคอลัมน์มีเฉพาะใน SWG ให้ใช้ dictionary อ่านความหมายเท่านั้น และให้ผู้ใช้ยืนยันชื่อคอลัมน์ด้วย SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '<ตาราง>' เมื่อไม่แน่ใจ อย่าเดาชื่อคอลัมน์
+- คำอธิบายใน dictionary มีที่คลาดเคลื่อนอยู่บ้าง (เช่น client_master.bill_* เลื่อนผิดช่อง bill_postcode ถูกอธิบายเป็นเบอร์โทร, Transfer_Detail.order_no ถูกอธิบายเป็น "เล่มเอกสาร") ให้ใช้เป็นแนวทาง ไม่ใช่ข้อเท็จจริงสุดท้าย
+- ตาราง hanel_master และ hanel_detail อยู่ใน dictionary แต่ไม่พบใน schema SWG ห้ามเขียน query กับสองตารางนี้โดยไม่ยืนยันกับผู้ใช้ก่อน
 - ความหมายของกลุ่ม OI_*, POOI_*, pd_*, SO_*, Salesorder_*, PurchaseOrder_* อนุมานจากชื่อ ให้บอกว่าเป็นการอนุมาน
-- ไม่มีรายการคอลัมน์ครบทุกตารางในนี้ ถ้าไม่แน่ใจชื่อคอลัมน์ ให้ขอผู้ใช้รัน SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '<ตาราง>' แล้ววางผลลัพธ์ อย่าเดาชื่อคอลัมน์
 
 ## ข้อตกลงของฐานข้อมูลนี้
 - Dialect คือ T-SQL: ใช้ TOP, [ชื่อ], ISNULL, GETDATE(), OFFSET/FETCH ไม่ใช้ LIMIT
@@ -29,7 +29,7 @@ description: "ความรู้โครงสร้างฐานข้อ
 | กระบวนการ | Header | Detail | คีย์เชื่อม | ความมั่นใจ |
 |---|---|---|---|---|
 | ใบขอซื้อ PR | pr_master | pr_details | order_no | สูง |
-| ใบสั่งซื้อ PO | purchase_orders | order_lines | order_no | กลาง (ไม่มีตาราง PO detail อื่น order_lines มี qty_po, qty_received, qty_putaway) |
+| ใบสั่งซื้อ PO | purchase_orders | order_lines | order_no | สูง (dictionary: ใบรอรับสินค้าจากการสั่งซื้อที่ Interface จาก Oracle; order_lines มี qty_po, qty_received, qty_putaway) |
 | รับสินค้า | receipt_master | receipt_detail | receipt_no | สูง |
 | Incoming/ASN | incoming_master | incoming_detail | incoming_no | สูง (receipt_master/receipt_detail ก็มี incoming_no) |
 | ใบสั่งขาย SO | sales_orders | sales_details | order_no | สูง |
@@ -38,13 +38,15 @@ description: "ความรู้โครงสร้างฐานข้อ
 | ส่งสินค้า DO | delivery_master | delivery_detail | delivery | สูง (detail มี sales_order, so_line_no, load_summary, rec_num, pallet) |
 | Load summary | loadsummary_master | loadsummary_detail | load_summary | สูง (master ไม่มี client) |
 | Invoice | invoice_master | invoice_detail | invoice_no | สูง |
-| โอนย้ายโซน | transfer_orders | transfer_details | order_no | สูง |
+| ขอเบิก/โอน | transfer_orders | transfer_details | order_no | สูง (dictionary เรียก "ข้อมูลการขอเบิกใช้สินค้า"; ตารางมี zone_dest, location_dest) |
 | ปรับยอด | adjusts_master | adjusts_detail | adjust_no | สูง |
 | Stocktake | stocktake_master | stockcount_history | stocktake_ref | กลาง |
 | Cycle count | cycle_count_master | cycle_count_detail | order_no | กลาง |
 | BOM/Kitting | bom_master | bom_detail | setcode + version | สูง |
 | PD | pd_master | pd_details | order_no | สูง |
 | OI | OI_master | OI_detail | OI_no | กลาง |
+
+ความหมายทางธุรกิจตาม dictionary: sales_orders/sales_details ถูกอธิบายว่า "การเบิกเพื่อส่งเคลม" ซึ่งอาจเป็นของ deployment หรือเวอร์ชันที่ต่างจาก SWG ให้ถามผู้ใช้ก่อนเรียกเอกสารว่า "เคลม" หรือ "ขาย" และ order_lines.qty_received / qty_putaway ถูกอธิบายว่า "จำนวนที่ต้องการรับ / ต้องการจัดเก็บ" ไม่ใช่ยอดที่รับแล้วแน่นอน ให้ตรวจก่อนนำไปรวมยอด
 
 เชื่อมเอกสารข้ามขั้น: delivery_detail.sales_order → sales_orders.order_no, invoice_master.sales_order / delivery, sales_details.invoice_no, sales_details.oi_no, receipt_detail.client_po_no → PO (ตรวจรูปแบบค่าก่อน)
 
@@ -53,17 +55,22 @@ description: "ความรู้โครงสร้างฐานข้อ
 |---|---|---|
 | สินค้า | product_master (261 คอลัมน์) | client + item_no (item_code, alternate_code เป็นรหัสอื่น) |
 | หน่วยนับ/แพ็ก | product_uom | client + item_no + item_uom |
-| บาร์โค้ด | product_barcode | client + barcode_no → item_no |
+| บาร์โค้ด | product_barcode | client + barcode_no + item_no |
 | ลูกค้า | customer_master | client + customer (มี cust_id ด้วย ตรวจว่าเอกสารเก็บตัวไหน) |
-| ซัพพลายเออร์ | suppliers | client + supplier (มี sup_id ด้วย) |
+| ซัพพลายเออร์ | suppliers | client + sup_id (PK ตาม dictionary) |
 | client | client_master | client |
 | คลัง/โซน | warehouses, zones | warehouse / warehouse + zone |
 | ตำแหน่งรายตัว | locations | warehouse + location (location_setup เก็บช่วง aisle/bay/level/slot สำหรับสร้างตำแหน่ง ไม่ใช่รายตัว) |
 | ผู้ใช้/สิทธิ์ | user_profile, user_group, group_access, menu_options | user_id, user_group |
 
+สำคัญ: suppliers.supplier คือ "คำนำหน้าผู้จัดจำหน่าย" ไม่ใช่รหัส ส่วนคอลัมน์ supplier ในตารางเอกสาร (receipt_master, purchase_orders, order_lines, pallet_history ฯลฯ) คือ "รหัสผู้ขาย" จึงน่าจะ join doc.supplier = suppliers.sup_id (เป็นการอนุมานจาก dictionary ให้ผู้ใช้ตรวจกับข้อมูลจริงก่อน)
+
+คีย์เชิงออกแบบอื่นตาม dictionary (ไม่ได้แปลว่ามี PRIMARY KEY constraint จริง): pallet_master (pallet_no), product_zoning (client + item_no + zone + search_seq), product_prefer_location (client + item_no + warehouse), last_number_counter (seq_group + doc_type + order_type + prefix)
+
 ## สต็อกและการเคลื่อนไหว
 - สต็อกปัจจุบัน: pallet_location (client, item_no, pallet, warehouse, location, uom, qty_rcvd, qty_avail, qty_booked, qty_pick_pack_booked, status) ใช้ rec_num เป็นตัวระบุเรคคอร์ดสต็อก
-- งาน/การเคลื่อนไหว: stock_movements (งานที่ยังเปิด) และ movements_history (ประวัติ) มี rec_num, movement_type, pallet_from/to, location_from/to, qty, qty_moved, works_order, sales_order, order_no
+- ความหมายจาก dictionary: qty_rcvd = จำนวนที่รับ, qty_avail = คงเหลือ, qty_booked = ถูกจอง, qty_pick_pack_booked = ถูกจองโดยการแพ็ค, rec_num = "เลขที่ลำดับชุดของข้อมูล", pallet_flag = flag การใช้งานเลขที่พาเลท
+- งาน/การเคลื่อนไหว: stock_movements (งานที่ยังเปิด) และ movements_history (ประวัติ) มี rec_num, movement_type, pallet_from/to, location_from/to, qty, qty_moved, works_order, sales_order, order_no; task_no = ลำดับของใบงาน, activity = ลำดับของการทำงาน, priority = ลำดับความสำคัญ (เป็นตัวเลข ไม่ใช่ข้อความ)
 - rec_num ปรากฏใน 33 ตารางสต็อก/นับ/โอน (pallet_history, delivery_detail, adjusts_detail, stockcount_history ฯลฯ)
 - ยอดคงเหลือต่อสินค้า: SUM(qty_avail) จาก pallet_location กรอง client และ item_no (ตรวจก่อนว่าสถานะ/ตำแหน่ง hold ควรรวมหรือไม่)
 
