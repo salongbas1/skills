@@ -1,6 +1,6 @@
 ---
 name: battle-of-talinchan-cards
-description: ฐานข้อมูลการ์ดเกม Battle of Talinchan ครบทุกเซ็ต 1,347 ใบ (BT01-BT11, SD, CC, ODY1, KD, PRMO ฯลฯ) พร้อมชื่อ ประเภท สี Symbol Cost/Gem/Power เรเรตี้ และข้อความเอฟเฟกต์ ใช้เมื่อผู้ใช้ถามถึงการ์ดใบใดใบหนึ่ง ค้นหา/กรองการ์ด เทียบการ์ด แนะนำหรือช่วยสร้างเด็ค ถามเอฟเฟกต์ คีย์เวิร์ด (จุติ คำสั่งเสีย สอดแนม ธรณีสูบ ฯลฯ) หรือรหัสการ์ดเช่น BT01-001 Use when the user asks about Battle of Talinchan / Talinchan TCG cards, deck building, card lookups or effect text.
+description: "ฐานข้อมูลการ์ดเกม Battle of Talinchan ครบทุกเซ็ต 1,347 ใบ (BT01-BT11, SD, CC, ODY1, KD, PRMO ฯลฯ) พร้อมชื่อ ประเภท สี Symbol Cost/Gem/Power เรเรตี้ และข้อความเอฟเฟกต์ ใช้เมื่อผู้ใช้ถามถึงการ์ดใบใดใบหนึ่ง ค้นหา/กรองการ์ด เทียบการ์ด แนะนำหรือช่วยสร้างเด็ค ถามเอฟเฟกต์ คีย์เวิร์ด (จุติ คำสั่งเสีย สอดแนม ธรณีสูบ ฯลฯ) หรือรหัสการ์ดเช่น BT01-001 Use when the user asks about Battle of Talinchan / Talinchan TCG cards, deck building, card lookups or effect text."
 ---
 
 # Battle of Talinchan Cards
